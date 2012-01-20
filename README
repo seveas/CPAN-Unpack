@@ -6,7 +6,7 @@ SYNOPSIS
       my $u = CPAN::Unpack->new;
       $u->cpan("path/to/CPAN/");
       $u->destination("cpan_unpacked/");
-      $u->quiet(2);
+      $u->quiet(1);
       $u->unpack;
 
 DESCRIPTION

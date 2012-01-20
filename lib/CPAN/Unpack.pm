@@ -54,31 +54,35 @@ sub unpack {
   foreach my $distribution ($p->latest_distributions) {
     $counter++;
     my $want = "$destination/" . $distribution->dist;
+    my $archive_filename = "$cpan/authors/id/" . $distribution->prefix;
+
+    unless (-f $archive_filename) {
+      warn "Archive $archive_filename not found";
+      next;
+    }
+
+    my $unpacked = $unpacked_versions{$distribution->dist};
+
+    if (!defined($distribution->version)) {
+      # This is a bug in Parse::CPAN::Packages (and ::Fast). It affects a few
+      # dozen packages, so use the mtime as version
+      $unpacked_versions{$distribution->dist} = "x" . (stat $archive_filename)[9];
+    }
+    else {
+      $unpacked_versions{$distribution->dist} = "x" . $distribution->version;
+    }
+
+    if (defined($unpacked) && $unpacked eq $unpacked_versions{$distribution->dist}) {
+      print "Skipping " . $distribution->prefix . " ($counter)\n" unless $self->quiet;
+      next;
+    }
+
     if (-d $want) {
-      if (!defined($distribution->version)) {
-	# This is a bug in Parse::CPAN::Packages (and ::Fast). It affects a few
-	# dozen packages, so simply always reextract those.
-        # FIXME: maybe do an md5sum check
-        $unpacked_versions{$distribution->dist} = "x";
-      }
-      elsif (exists $unpacked_versions{$distribution->dist} &&
-          "x" . $distribution->version eq $unpacked_versions{$distribution->dist}) {
-        print "Skipping " . $distribution->prefix . " ($counter)\n" unless $self->quiet;
-        $unpacked_versions{$distribution->dist} = "x" . $distribution->version;
-        next;
-      }
       print "Deleting old version of " . $distribution->dist . "\n" unless $self->quiet;
       rmtree "$destination/$want";
     }
 
-    print "Unpacking " . $distribution->prefix . " ($counter)\n" unless ($self->quiet >= 2);
-
-    my $archive_filename = "$cpan/authors/id/" . $distribution->prefix;
-
-    unless (-f $archive_filename) {
-      warn "No $archive_filename";
-      next;
-    }
+    print "Unpacking " . $distribution->prefix . " ($counter)\n" unless $self->quiet;
 
     my $extract = Archive::Extract->new(archive => $archive_filename);
     my $to = "$destination/test";
@@ -105,7 +109,6 @@ sub unpack {
       rename $to, $want;
     }
 
-    $unpacked_versions{$distribution->dist} = "x" . ($distribution->version || '');
     unless($counter % 500) {
       # Write this every now and then to prevent ^C from killing the list
       open(my $fh, ">", "$destination/unpacked_versions.yml.tmp");
@@ -134,7 +137,7 @@ CPAN::Unpack - Unpack CPAN distributions
   my $u = CPAN::Unpack->new;
   $u->cpan("path/to/CPAN/");
   $u->destination("cpan_unpacked/");
-  $u->quiet(2); # Use 1 to only see 'unpacking' messages, 2 for silence
+  $u->quiet(1);
   $u->unpack;
 
 =head1 DESCRIPTION
