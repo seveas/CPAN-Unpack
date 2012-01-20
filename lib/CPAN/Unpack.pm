@@ -2,6 +2,9 @@ package CPAN::Unpack;
 use strict;
 use warnings;
 use Archive::Extract;
+use Fcntl qw(:mode);
+use File::Basename qw(basename);
+use File::Find;
 use File::Path;
 use Parse::CPAN::Packages::Fast;
 use YAML::Any ();
@@ -82,11 +85,21 @@ sub unpack {
     rmtree($to);
     mkdir($to);
     $extract->extract(to => $to);
+
+    # Fix up broken permissions
+    File::Find::find({ wanted => \&fixme, follow => 0, no_chdir => 1}, $to);
+
     my @files = <$to/*>;
     my $files = @files;
     if ($files == 1) {
       my $file = $files[0];
-      rename $file, $want;
+      if (S_ISDIR(stat($file))) {
+        rename $file, $want;
+      }
+      else {
+        mkdir $want;
+        rename $file, "$want/" . basename($file);
+      }
       rmdir $to;
     } else {
       rename $to, $want;
