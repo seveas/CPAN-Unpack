@@ -9,7 +9,7 @@ use File::Path;
 use Parse::CPAN::Packages::Fast;
 use YAML::Any ();
 use base qw(Class::Accessor);
-__PACKAGE__->mk_accessors(qw(cpan destination));
+__PACKAGE__->mk_accessors(qw(cpan destination quiet));
 $Archive::Extract::PREFER_BIN = 1;
 
 our $VERSION = '0.23';
@@ -63,15 +63,15 @@ sub unpack {
       }
       elsif (exists $unpacked_versions{$distribution->dist} &&
           "x" . $distribution->version eq $unpacked_versions{$distribution->dist}) {
-        #print "Skipping " . $distribution->prefix . " ($counter)\n";
+        print "Skipping " . $distribution->prefix . " ($counter)\n" unless $self->quiet;
         $unpacked_versions{$distribution->dist} = "x" . $distribution->version;
         next;
       }
-      print "Deleting old version of " . $distribution->dist . "\n";
+      print "Deleting old version of " . $distribution->dist . "\n" unless $self->quiet;
       rmtree "$destination/$want";
     }
 
-    print "Unpacking " . $distribution->prefix . " ($counter)\n";
+    print "Unpacking " . $distribution->prefix . " ($counter)\n" unless ($self->quiet >= 2);
 
     my $archive_filename = "$cpan/authors/id/" . $distribution->prefix;
 
@@ -134,6 +134,7 @@ CPAN::Unpack - Unpack CPAN distributions
   my $u = CPAN::Unpack->new;
   $u->cpan("path/to/CPAN/");
   $u->destination("cpan_unpacked/");
+  $u->quiet(2); # Use 1 to only see 'unpacking' messages, 2 for silence
   $u->unpack;
 
 =head1 DESCRIPTION
