@@ -4,6 +4,7 @@ use warnings;
 use Archive::Extract;
 use File::Path;
 use Parse::CPAN::Packages::Fast;
+use YAML::Any ();
 use base qw(Class::Accessor);
 __PACKAGE__->mk_accessors(qw(cpan destination));
 $Archive::Extract::PREFER_BIN = 1;
@@ -19,6 +20,7 @@ sub new {
 
 sub unpack {
   my $self = shift;
+  my $counter = 0;
 
   my $cpan = $self->cpan;
   die "No $cpan" unless -d $cpan;
@@ -30,17 +32,49 @@ sub unpack {
   my $packages_filename = "$cpan/modules/02packages.details.txt.gz";
   die "No packages at $packages_filename" unless -f $packages_filename;
 
+  my %unpacked_versions;
+  if (-e "$destination/unpacked_versions.yml") {
+    local $/;
+    open(my $fh, "<", "$destination/unpacked_versions.yml");
+    %unpacked_versions = %{YAML::Any::Load(<$fh>)};
+    close $fh;
+  }
+
+  sub fixme{
+    my $path = $_;
+    my $mode = (stat($path))[2];
+    if(S_ISDIR($mode)) {
+      chmod((S_IMODE($mode) | S_IRWXU), $path) unless (($mode & S_IRWXU) == S_IRWXU);
+    }
+  }
   my $p = Parse::CPAN::Packages::Fast->new($packages_filename);
   foreach my $distribution ($p->latest_distributions) {
-    print "About to do " . $distribution->prefix . "\n";
+    $counter++;
     my $want = "$destination/" . $distribution->dist;
-    next if -d $want;
+    if (-d $want) {
+      if (!defined($distribution->version)) {
+	# This is a bug in Parse::CPAN::Packages (and ::Fast). It affects a few
+	# dozen packages, so simply always reextract those.
+        # FIXME: maybe do an md5sum check
+        $unpacked_versions{$distribution->dist} = "x";
+      }
+      elsif (exists $unpacked_versions{$distribution->dist} &&
+          "x" . $distribution->version eq $unpacked_versions{$distribution->dist}) {
+        #print "Skipping " . $distribution->prefix . " ($counter)\n";
+        $unpacked_versions{$distribution->dist} = "x" . $distribution->version;
+        next;
+      }
+      print "Deleting old version of " . $distribution->dist . "\n";
+      rmtree "$destination/$want";
+    }
+
+    print "Unpacking " . $distribution->prefix . " ($counter)\n";
 
     my $archive_filename = "$cpan/authors/id/" . $distribution->prefix;
 
     unless (-f $archive_filename) {
-	warn "No $archive_filename";
-	next;
+      warn "No $archive_filename";
+      next;
     }
 
     my $extract = Archive::Extract->new(archive => $archive_filename);
@@ -57,8 +91,23 @@ sub unpack {
     } else {
       rename $to, $want;
     }
+
+    $unpacked_versions{$distribution->dist} = "x" . ($distribution->version || '');
+    unless($counter % 500) {
+      # Write this every now and then to prevent ^C from killing the list
+      open(my $fh, ">", "$destination/unpacked_versions.yml.tmp");
+      print $fh YAML::Any::Dump(\%unpacked_versions);
+      close $fh;
+      rename "$destination/unpacked_versions.yml.tmp", "$destination/unpacked_versions.yml";
+    }
   }
+
+  open(my $fh, ">", "$destination/unpacked_versions.yml.tmp");
+  print $fh YAML::Any::Dump(\%unpacked_versions);
+  close $fh;
+  rename "$destination/unpacked_versions.yml.tmp", "$destination/unpacked_versions.yml";
 }
+
 
 __END__
 

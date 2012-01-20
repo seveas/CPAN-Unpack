@@ -17,5 +17,6 @@ WriteMakefile(
         'IO::Zlib'                    => 0,
         'Parse::CPAN::Packages::Fast' => '2.21',
         'Test::More'                  => 0,
+        'YAML::Any'                   => 0,
     },
 );
