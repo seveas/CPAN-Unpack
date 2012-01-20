@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Archive::Extract;
 use File::Path;
-use Parse::CPAN::Packages;
+use Parse::CPAN::Packages::Fast;
 use base qw(Class::Accessor);
 __PACKAGE__->mk_accessors(qw(cpan destination));
 $Archive::Extract::PREFER_BIN = 1;
@@ -30,7 +30,7 @@ sub unpack {
   my $packages_filename = "$cpan/modules/02packages.details.txt.gz";
   die "No packages at $packages_filename" unless -f $packages_filename;
 
-  my $p = Parse::CPAN::Packages->new($packages_filename);
+  my $p = Parse::CPAN::Packages::Fast->new($packages_filename);
   foreach my $distribution ($p->latest_distributions) {
     print "About to do " . $distribution->prefix . "\n";
     my $want = "$destination/" . $distribution->dist;
@@ -94,7 +94,7 @@ another 1.6G.
 This can be handy for code metrics, searching CPAN, or just being very
 nosy indeed.
 
-This uses Parse::CPAN::Packages' latest_distributions method for
+This uses Parse::CPAN::Packages::Fast's latest_distributions method for
 finding the latest distribution.
 
 =head1 AUTHOR

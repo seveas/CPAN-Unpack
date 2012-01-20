@@ -27,8 +27,8 @@ DESCRIPTION
     This can be handy for code metrics, searching CPAN, or just being very
     nosy indeed.
 
-    This uses Parse::CPAN::Packages' latest_distributions method for finding
-    the latest distribution.
+    This uses Parse::CPAN::Packages::Fast's latest_distributions method for
+    finding the latest distribution.
 
 AUTHOR
     Leon Brocard <acme@astray.com>
