@@ -17,5 +17,5 @@ ok( -d "t/unpacked/Acme-Buffy" );
 ok( -d "t/unpacked/Acme-Colour" );
 ok( -d "t/unpacked/GraphViz" );
 
-my @files = <t/unpacked/GraphViz/GraphViz-1.8/*>;
+my @files = <t/unpacked/GraphViz/*>;
 is( scalar(@files), 7 );
