@@ -72,7 +72,7 @@ sub unpack {
       $unpacked_versions{$distribution->dist} = "x" . $distribution->version;
     }
 
-    if (defined($unpacked) && $unpacked eq $unpacked_versions{$distribution->dist}) {
+    if (defined($unpacked) && $unpacked eq $unpacked_versions{$distribution->dist} && -d "$destination/$want") {
       print "Skipping " . $distribution->prefix . " ($counter)\n" unless $self->quiet;
       next;
     }
