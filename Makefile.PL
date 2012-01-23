@@ -15,7 +15,7 @@ WriteMakefile(
         'Archive::Zip'                => 0,
         'Class::Accessor::Chained'    => 0,
         'IO::Zlib'                    => 0,
-        'Parse::CPAN::Packages::Fast' => '2.21',
+        'Parse::CPAN::Packages::Fast' => '0.04',
         'Test::More'                  => 0,
         'YAML::Any'                   => 0,
     },

@@ -5,17 +5,17 @@ use Test::More tests => 7;
 use_ok("CPAN::Unpack");
 
 rmtree("t/unpacked");
-ok(!-d "t/unpacked", "No t/unpacked at the start");
+ok( !-d "t/unpacked", "No t/unpacked at the start" );
 
 my $u = CPAN::Unpack->new;
 $u->cpan("t/cpan/");
 $u->destination("t/unpacked/");
 $u->unpack;
 
-ok(-d "t/unpacked");
-ok(-d "t/unpacked/Acme-Buffy");
-ok(-d "t/unpacked/Acme-Colour");
-ok(-d "t/unpacked/GraphViz");
+ok( -d "t/unpacked" );
+ok( -d "t/unpacked/Acme-Buffy" );
+ok( -d "t/unpacked/Acme-Colour" );
+ok( -d "t/unpacked/GraphViz" );
 
-my @files = <t/unpacked/GraphViz/*>;
-is(scalar(@files), 7);
+my @files = <t/unpacked/GraphViz/GraphViz-1.8/*>;
+is( scalar(@files), 7 );
