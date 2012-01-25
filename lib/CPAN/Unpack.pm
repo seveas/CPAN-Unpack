@@ -105,7 +105,7 @@ sub unpack {
         my $files = @files;
         if ( $files == 1 ) {
             my $file = $files[0];
-            if ( S_ISDIR( stat("$to/$file") ) ) {
+            if ( S_ISDIR( ( stat( $file ) )[2] ) ) {
                 rename $file, $want;
             } else {
                 mkdir $want;
