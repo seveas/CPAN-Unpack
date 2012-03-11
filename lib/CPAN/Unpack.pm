@@ -9,7 +9,7 @@ use File::Path;
 use Parse::CPAN::Packages::Fast;
 use YAML::Any ();
 use base qw(Class::Accessor);
-__PACKAGE__->mk_accessors(qw(cpan destination quiet));
+__PACKAGE__->mk_accessors(qw(cpan destination quiet all_versions));
 $Archive::Extract::PREFER_BIN = 1;
 
 our $VERSION = '0.30';
@@ -52,7 +52,8 @@ sub unpack {
         }
     }
     my $p = Parse::CPAN::Packages::Fast->new($packages_filename);
-    foreach my $distribution ( $p->latest_distributions ) {
+    foreach my $distribution ( $self->all_versions ? $p->distributions : $p->latest_distributions ) {
+        next unless defined($distribution->dist);
         $counter++;
         my $want             = "$destination/" . $distribution->dist;
         my $archive_filename = "$cpan/authors/id/" . $distribution->prefix;
@@ -74,11 +75,17 @@ sub unpack {
             $unpacked_versions{ $distribution->dist }
                 = "x" . $distribution->version;
         }
+        if($self->all_versions) {
+            $want .= "-" . substr($unpacked_versions{ $distribution->dist }, 1);
+        }
 
         if ( defined($unpacked)
             && $unpacked eq $unpacked_versions{ $distribution->dist } 
             && -d $want )
         {
+            next;
+        }
+        if ( -d $want && $self->all_versions ) {
             next;
         }
 
@@ -116,7 +123,7 @@ sub unpack {
             rename $to, $want;
         }
 
-        unless ( $counter % 500 ) {
+        unless ( $self->all_versions || ( $counter % 500 ) ) {
 
            # Write this every now and then to prevent ^C from killing the list
             open( my $fh, ">", "$destination/unpacked_versions.yml.tmp" );
@@ -127,11 +134,13 @@ sub unpack {
         }
     }
 
-    open( my $fh, ">", "$destination/unpacked_versions.yml.tmp" );
-    print $fh YAML::Any::Dump( \%unpacked_versions );
-    close $fh;
-    rename "$destination/unpacked_versions.yml.tmp",
-        "$destination/unpacked_versions.yml";
+    unless( $self->all_versions ) {
+        open( my $fh, ">", "$destination/unpacked_versions.yml.tmp" );
+        print $fh YAML::Any::Dump( \%unpacked_versions );
+        close $fh;
+        rename "$destination/unpacked_versions.yml.tmp",
+            "$destination/unpacked_versions.yml";
+    }
 }
 
 __END__
@@ -147,6 +156,7 @@ CPAN::Unpack - Unpack CPAN distributions
   $u->cpan("path/to/CPAN/");
   $u->destination("cpan_unpacked/");
   $u->quiet(1);
+  # $u->all_versions(1); # Use this if you want to unpack all versions
   $u->unpack;
 
 =head1 DESCRIPTION
