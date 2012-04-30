@@ -14,6 +14,11 @@ $Archive::Extract::PREFER_BIN = 1;
 
 our $VERSION = '0.30';
 
+use constant {
+    S_CPANDIR => S_IRWXU | S_IXGRP | S_IRGRP | S_IXOTH | S_IROTH,
+    S_CPANFILE => S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
+};
+
 sub new {
     my $class = shift;
     my $self  = {};
@@ -46,10 +51,9 @@ sub unpack {
     sub fixme {
         my $path = $_;
         my $mode = ( stat($path) )[2];
-        if ( S_ISDIR($mode) ) {
-            chmod( ( S_IMODE($mode) | S_IRWXU ), $path )
-                unless ( ( $mode & S_IRWXU ) == S_IRWXU );
-        }
+	my $wmode = S_ISDIR($mode) ? S_CPANDIR : S_CPANFILE;
+        chmod( ( S_IMODE($mode) | $wmode ), $path )
+            unless ( ( $mode & $wmode ) == $wmode );
     }
     my $p = Parse::CPAN::Packages::Fast->new($packages_filename);
     foreach my $distribution ( $self->all_versions ? $p->distributions : $p->latest_distributions ) {
